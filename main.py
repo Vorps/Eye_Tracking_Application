@@ -1,106 +1,99 @@
+import os
 import cv2
 import numpy as np
-import process
 import time
+import eye_detection
 
-
+# Class EyeTracking
 class EyeTracking:
     def __init__(self):
-        self.face_detector, self.eye_detector = process.init_cv()
-        self.leftThreshold = 30  # Seuil pour binarisation roi eyes left
-        self.rightThreshold = 30  # Seuil pour binarisation roi eyes right
+        # Capture video
+        #self.capture = cv2.VideoCapture("eyevideo.mp4") # TESTING ONLY
         self.capture = cv2.VideoCapture(0)
-        self.timeMean = 1
-        self.meanX = np.zeros(self.timeMean)
-        self.meanY = np.zeros(self.timeMean)
 
-        self.trackbars()  # create trackbars for leftThreshold and rightThreshold, 2020-02-11
+        # Viola - Jone + Haar Cascade
+        self.eye_detector = eye_detection.init_eye_detector()
+        self.scale_factor = 1.3
+        self.min_neighbors = 5
+        self.minSize = (0, 0)
+        self.maxSize = (400, 400)
 
+        # Pupil detection and segmentation
+        self.threshold = 25
+
+        # Trackbars initialisation
+        self.trackbars()
+
+        # Update loop
         while True:
             self.update()
-            k = cv2.waitKey(10) & 0xFF
-            if k == 116:
-                self.timeMean = self.timeMean + 1
-                self.meanX = np.concatenate((self.meanX,  np.zeros(1)))
-                self.meanY = np.concatenate((self.meanY, np.zeros(1)))
-            if k == 121 and self.timeMean > 1:
-                self.timeMean = self.timeMean - 1
-                self.meanX = self.meanX[0:self.timeMean]
-                self.meanY = self.meanX[0:self.timeMean]
+            k = cv2.waitKey(1) & 0XFF
             if k == 27:
                 break
+
         self.capture.release()
         cv2.destroyAllWindows()
 
     def update(self):
         t0 = time.time()  # Calculate fps, 2020-02-11
+        success, base_image = self.capture.read()  # Image caméra RGB
 
-        _, base_image = self.capture.read()  # Image caméra RGB
+        # TESTING ONLY video --------------
+        # base_image = cv2.resize(base_image, (960, 520), interpolation=cv2.INTER_LINEAR)
+
         base_image = cv2.flip(base_image, 1)  # Flip Image, 2020-02-12
-        processed_image = cv2.cvtColor(base_image, cv2.COLOR_BGR2GRAY)  # Image en nveau de gris moyennes des gammes
-        face_frame, face_frame_gray, left_eye_estimated_position, right_eye_estimated_position, _, _ = process.detect_face(
-            base_image, processed_image, self.face_detector)  # Région où ce trouve un visage
-        x = None
-        y = None
-        if face_frame is not None:
-            left_eye_frame, right_eye_frame, left_eye_frame_gray, right_eye_frame_gray = process.detect_eyes(
-                face_frame,
-                face_frame_gray,
-                left_eye_estimated_position,
-                right_eye_estimated_position,
-                self.eye_detector)  # Deux régions pour les eyes
+        processed_image = cv2.cvtColor(base_image, cv2.COLOR_BGR2GRAY)  # Image en niveau de gris moyennes des gammes
+        eyes = eye_detection.detect_eyes(base_image, processed_image, self.eye_detector, self.scale_factor, self.min_neighbors, self.minSize, self.maxSize)
 
-            if right_eye_frame is not None:
-                x, y = self.get_position(
-                    right_eye_frame, right_eye_frame_gray, self.rightThreshold, 'right')
-            if left_eye_frame is not None:
-                x, y = self.get_position(
-                    left_eye_frame, left_eye_frame_gray, self.leftThreshold, 'left')
+        # Pupil detection
+        eye_detection.pupil_detection(eyes, processed_image, base_image, self.threshold)
 
-        fps = round(1 / (time.time() - t0))  # Calculate fps, 2020-02-11
-        cv2.putText(base_image, "Exit(esc) Threshold (Left(a,z)  = " + str(self.leftThreshold) + "), (Right(e,r) = " + str(self.rightThreshold) + "), Fps = " + str(fps), (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
-        cv2.putText(base_image, "TimeMean(t,y) = "+str(self.timeMean)+" Position(" + str(x) + ", " + str(y) + ")", (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
-
-        cv2.imshow('Webcam', base_image)
-
-    def get_position(self, frame, frame_gray, threshold, label):
-        x, y, frame_bin1, frame_bin2, frame_bin3, frame_bin4 = process.process_eye(frame_gray, threshold)
-        self.meanX, x = self.mean(self.meanX, x)
-        self.meanY, y = self.mean(self.meanY, y)
-        cv2.circle(frame, (x, y), 2, (0, 0, 255), 1)
-        cv2.circle(frame_gray, (x, y), 2, (255, 255, 255), 1)
-        numpy_horizontal_concat = np.concatenate(
-            (frame_gray, frame_bin1, frame_bin2, frame_bin3,
-             frame_bin4), axis=1)
-        cv2.imshow(label+'_bin', numpy_horizontal_concat)
-        cv2.imshow(label, frame)
-
-        return x, y
-
-    def mean(self, meanVect, pos):
-        meanVect = np.roll(meanVect, 1)
-        meanVect[0] = pos
-        return meanVect, int(np.sum(meanVect)/meanVect.shape[0])
+        # Fps
+        t1 = time.time()
+        if (t1 - t0) != 0:
+            fps = round(1 / (t1 - t0))  # Calculate fps, 2020-02-11
+            print("FPS " + str(fps))
+        cv2.imshow("trackbars", np.zeros((400, 1)))
+        cv2.imshow("Webcam", base_image)
 
     # trackbars
     # Create trackbars for values of leftThreshold and rightThreshold
-    # 2020-02-11, v1.0
     def trackbars(self):
-        cv2.namedWindow('trackbars', flags= cv2.WINDOW_NORMAL)
-        cv2.createTrackbar('leftThreshold', 'trackbars', 30, 255, lambda v: self.trackbars_callback_left(v))
-        cv2.createTrackbar('rightThreshold', 'trackbars', 30, 255, lambda v: self.trackbars_callback_right(v))
+        cv2.namedWindow('trackbars', flags=cv2.WINDOW_NORMAL)
+        cv2.createTrackbar('scaleFactor', 'trackbars', 13, 30, lambda v: self.trackbars_callback_scale_factor(v))
+        cv2.createTrackbar('minNeighbors', 'trackbars', 5, 10, lambda v: self.trackbars_callback_min_neighbors(v))
+        cv2.createTrackbar('minSize', 'trackbars', 0, 99, lambda v: self.trackbars_callback_min_size(v))
+        cv2.createTrackbar('maxSize', 'trackbars', 400, 500, lambda v: self.trackbars_callback_max_size(v))
+        cv2.createTrackbar('threshold', 'trackbars', 25, 255, lambda v: self.trackbars_callback_threshold(v))
 
-    # trackbars_callback_left
-    # Callback function of leftThreshold
-    # 2020-02-11, v1.0
-    def trackbars_callback_left(self, value):
-        self.leftThreshold = value
+    # trackbars_callback_scale_factor
+    # Callback function of scaleFactor
+    def trackbars_callback_scale_factor(self, value):
+        # scale_factor must be larger than 1
+        if value > 10:
+            self.scale_factor = value/10
+        else:
+            print('scale_factor must be larger than 1')
 
-    # trackbars_callback_right
-    # Callback function of rightThreshold
-    # 2020-02-11, v1.0
-    def trackbars_callback_right(self, value):
-        self.rightThreshold = value
+    # trackbars_callback_min_neighbors
+    # Callback function of minNeighbors
+    def trackbars_callback_min_neighbors(self, value):
+        self.min_neighbors = value
+
+    # trackbars_callback_min_size
+    # Callback function of minSize
+    def trackbars_callback_min_size(self, value):
+        self.minSize = (value, value)
+
+    # trackbars_callback_max_size
+    # Callback function of maxSize
+    def trackbars_callback_max_size(self, value):
+        self.maxSize = (value, value)
+
+    # trackbars_callback_threshold
+    # Callback function of threshold
+    def trackbars_callback_threshold(self, value):
+        self.threshold = value
 
 
 if __name__ == "__main__":
