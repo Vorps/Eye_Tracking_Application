@@ -3,6 +3,8 @@ import QtQuick 2.0
 import QtQuick.Layouts 1.14
 import Models 1.0
 import QtQuick.Dialogs 1.2
+import QtQuick.Controls.Universal 2.12
+import "Style"
 
 ApplicationWindow {
     id : applicationWindow
@@ -11,7 +13,7 @@ ApplicationWindow {
     visible: true
     width: 1400
     height: 850
-
+    color:"#151d25"
     onClosing: {
         envVariable.save("1234567Data/EnvVariable/Default.xml")
     }
@@ -251,6 +253,8 @@ ApplicationWindow {
             spacing:20
             anchors.fill: parent
             Button {
+                height:40
+                width:40
                 id:homeButton
                 enabled:false
                 icon.source: "../Resources/Images/Back.svg"
@@ -305,6 +309,7 @@ ApplicationWindow {
             Label {
                 text:envVariable.info
                 Layout.fillWidth: true
+                color:'white'
                 horizontalAlignment: Text.AlignRight
             }
         }
@@ -329,10 +334,22 @@ ApplicationWindow {
         EyeTrackingVariableView {}
     }
 
+
+     Component{
+        id : reportView
+        ReportView {}
+    }
+
+    Component{
+        id : mainCalibrationView
+        MainCalibrationView {}
+    }
+
     Component{
         id : calibrationView
         CalibrationView {}
     }
+
 
     Component{
         id : simonTaskView
@@ -368,12 +385,18 @@ ApplicationWindow {
 
     function load_page(page){
         homeButton.enabled = true
-        imageWriter.opacity= 1
         switch(page){
         case 'Setup':
+            imageWriter.opacity= 1
             stack.push(eyeTrackingVariableView);
             break;
+        case 'Current Calibration':
+             stack.push(reportView);
+             break;
         case 'Calibration':
+            stack.push(mainCalibrationView);
+             break;
+        case 'New Calibration':
             calibration.reset()
             stack.push(calibrationView);
             warningText.text="Click for start"
@@ -398,7 +421,6 @@ ApplicationWindow {
          calibration.record = false
          mouseControl.record = false
          stack.pop()
-         homeButton.enabled=false
     }
 
 }

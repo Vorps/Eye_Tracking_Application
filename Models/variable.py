@@ -5,6 +5,7 @@ import numpy as np
 from lxml import etree
 from PyQt5 import QtCore
 
+
 class Variable(QtCore.QObject):
 
     def __init__(self, parent=None):
@@ -19,7 +20,15 @@ class Variable(QtCore.QObject):
         if path.exists(name[7:]):
             tree = etree.parse(name[7:])
             root = tree.getroot()
-            for child in root:
+            self.loadApply(root)
+            return True
+        else:
+            self.reset()
+            return False
+
+    def loadApply(self, root):
+        for child in root:
+            if 'type' in child.attrib:
                 if child.attrib['type'] == "int":
                     setattr(self, child.tag, int(child.attrib['data']))
                 elif child.attrib['type'] == "ndarray":
@@ -27,20 +36,21 @@ class Variable(QtCore.QObject):
                     setattr(self, child.tag, np.fromstring(value[1:-1], dtype=float, sep=' '))
                 else:
                     setattr(self, child.tag, child.attrib['data'])
-                if child.tag[1:]+"Change" in dir(self):
-                    self.__getattribute__(child.tag[1:]+"Change").emit()
-            return True
-        else:
-            self.reset()
-            return False
+                if child.tag[1:] + "Change" in dir(self):
+                    self.__getattribute__(child.tag[1:] + "Change").emit()
+
+    def saveApply(self, element):
+        for property, value in vars(self).items():
+            if property not in self.blackList and property != "blackList":
+                Variable.setData(element, property, value)
+        return element
 
     @QtCore.pyqtSlot(str)
     def save(self, name):
-        envVariable = etree.Element(type(self).__name__)
-        for property, value in vars(self).items():
-            if property not in self.blackList and property != "blackList":
-                Variable.setData(envVariable, property, value)
-        Variable.writeData(name, etree.tostring(envVariable))
+        element = etree.Element(type(self).__name__)
+        self.saveApply(element)
+        Variable.writeData(name, element)
+
 
     @abstractmethod
     def reset(self):
@@ -51,9 +61,9 @@ class Variable(QtCore.QObject):
         element.set("data", str(data))
         element.set("type", str(type(data).__name__))
 
-    def writeData(name, data):
+    def writeData(name, envVariable):
         output_file = open(name[7:], 'wb')
-        output_file.write(data)
+        output_file.write(etree.tostring(envVariable))
         output_file.close()
 
 
@@ -284,7 +294,7 @@ class EnvVariable(Variable):
         self._selectEye = None
         self._fileEyeTrackingVariable = None
         self._fileCalibration = None
-        self._info = {'Setup':'', 'Calibration':''}
+        self._info = {'Setup': '', 'Calibration': ''}
         self._index = 0
         self._calibrationLoad = False
         self.load("1234567Data/EnvVariable/Default.xml")
@@ -367,7 +377,7 @@ class EnvVariable(Variable):
         info = ""
         for key in self._info.keys():
             if self._info[key] != "":
-                info += key+" : "+self._info[key]+"     "
+                info += key + " : " + self._info[key] + "     "
         return info
 
     def permission(perm):
@@ -375,5 +385,7 @@ class EnvVariable(Variable):
             def new_function(*args, **kwargs):
                 if EnvVariable.instance.modeProcess >> perm & 1:
                     function(*args, **kwargs)
+
             return new_function
+
         return decorator

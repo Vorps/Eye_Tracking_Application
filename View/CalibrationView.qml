@@ -1,6 +1,8 @@
 import QtQuick 2.14
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.14
+import "Style"
+
 Item {
     Rectangle{
         id:scenarioCalibration
@@ -55,14 +57,7 @@ Item {
                     spacing:20
                     anchors.fill: parent
                     Button{
-                        Image {
-                            anchors.fill: parent
-                            anchors.topMargin: 10
-                            anchors.bottomMargin: 10
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 10
-                            source: "../Resources/Images/Retry.svg"
-                        }
+                        icon.source: "../Resources/Images/Retry.svg"
                         id:loadButtonCalibrationRetry
                         anchors.left:parent.left
                         anchors.leftMargin: 20
@@ -108,14 +103,7 @@ Item {
                         }
                     }
                     Button{
-                        Image {
-                            anchors.fill: parent
-                            anchors.topMargin: 10
-                            anchors.bottomMargin: 10
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 10
-                            source: "../Resources/Images/Save.svg"
-                        }
+                        icon.source: "../Resources/Images/Save.svg"
                         id:loadButtonCalibration
                         anchors.right:parent.right
                         anchors.rightMargin: 20
@@ -157,16 +145,10 @@ Item {
           acceptedButtons: Qt.LeftButton | Qt.RightButton
             onReleased: {
                 if(mouse.button == 1 && !calibration.record){
-                    scenarioCalibration.state = "center"
-                    calibration.record = true;
-                    toolBarApp.visible = false
-                    menuBarApp.visible = false
-                    calibration.setStateCalibration("center")
+                   scenarioCalibration.start()
                 }
                 if(mouse.button == 2){
-                    toolBarApp.visible = true
-                    menuBarApp.visible = true
-                    back()
+                    scenarioCalibration.quit()
                 }
             }
 
@@ -189,14 +171,45 @@ Item {
 
         function reset() {
             calibration.reset()
-            resultCalibration.visible = false;
+            areaCalibration.enabled  = true;
             scenarioCalibration.state = "";
             scenarioCalibration.opacity1 = 1
             scenarioCalibration.opacity2 =0.2;
+            resultCalibration.visible = false;
             canvasCalibration.height = scenarioCalibration.height;
             canvasCalibration.requestPaint();
-            areaCalibration.enabled  = true;
             warningText.text="Click for start"
+        }
+
+        function start() {
+            scenarioCalibration.state = "center"
+            calibration.setStateCalibration("center")
+            calibration.record = true;
+            toolBarApp.visible = false
+            menuBarApp.visible = false
+            canvasCalibration.height = scenarioCalibration.height;
+            canvasCalibration.requestPaint();
+        }
+        function quit() {
+            calibration.record = false;
+            toolBarApp.visible = true
+            menuBarApp.visible = true
+            back()
+        }
+
+        function stop() {
+            scenarioCalibration.state = "center"
+            toolBarApp.visible = true
+            menuBarApp.visible = true
+            scenarioCalibration.opacity1 = 0.8
+            scenarioCalibration.opacity2 = 1
+            calibration.record = false;
+            calibration.process()
+            resultCalibration.visible = true
+            canvasCalibration.height = scenarioCalibration.height-95
+            cible.visible = false
+            canvasCalibration.requestPaint()
+            areaCalibration.enabled  = false;
         }
 
         property string nextState: ""
@@ -238,19 +251,7 @@ Item {
                 return
             }
             if (scenarioCalibration.state == "stop"){
-                scenarioCalibration.state = "center"
-                toolBarApp.visible = true
-                menuBarApp.visible = true
-                scenarioCalibration.opacity1 = 0.8
-                scenarioCalibration.opacity2 = 1
-                calibration.record = false;
-                calibration.process()
-                resultCalibration.visible = true
-                canvasCalibration.height = scenarioCalibration.height-95
-                cible.visible = false
-                canvasCalibration.requestPaint()
-
-              areaCalibration.enabled  = true;
+                scenarioCalibration.stop()
                 return
             }
         }

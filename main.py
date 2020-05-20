@@ -1,7 +1,8 @@
 import sys
 
+import PyQt5
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QStyleFactory
 from PyQt5.QtQml import QQmlApplicationEngine
 import Models
 
@@ -12,7 +13,8 @@ if __name__ == "__main__":
     engine = QQmlApplicationEngine()
     ctx = engine.rootContext()
     engine.load('View/EyeTrackingWindow.qml')
-
+    print(QApplication.style().metaObject().className())
+    print(QStyleFactory.keys())
     win = engine.rootObjects()[0]
     win.show()
     sys.exit(app.exec_())

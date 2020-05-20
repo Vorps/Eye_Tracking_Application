@@ -23,18 +23,15 @@ class EyeTrackingClient(QtCore.QObject):
         self.centersPupil = np.empty((buffer, 2), int)
 
     def update(self, centerPupil):
-        if self._buffer > 0:
+        if self._buffer > 1:
             self.centersPupil = np.roll(self.centersPupil, -1)
             self.centersPupil[self._buffer-1, :] = centerPupil
         else:
             self.centersPupil = np.append(self.centersPupil, centerPupil, axis=0)
 
     def reset(self):
-        print(self._buffer)
-        if self._buffer == -1:
-            self._buffer = 1
-        print(self._buffer)
-        self.centersPupil = np.empty((self._buffer, 2), int)
+        if self._buffer > 1:
+            self.centersPupil = np.empty((self._buffer, 2), int)
 
     def setRecord(self, record):
         self._record = record
@@ -157,7 +154,7 @@ class EyeTracking:
             if client.record:
                 if client.filter:
                     if centerEye is not None and centerPupil is not None:
-                        client.update(np.reshape(centerPupil, (1, 2)))
+                        client.update(np.reshape(centerPupil-centerEye, (1, 2)))
                 else:
                     client.update(np.reshape(centerPupil,
                                              (1, 2)) if centerEye is not None and centerPupil is not None else np.array(

@@ -1,36 +1,31 @@
 import QtQuick 2.0
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.14
-
+import "Style"
 
 Item {
   ButtonGroup { id: radioGroup1 }
     ButtonGroup { id: radioGroup2 }
  ColumnLayout{
-    anchors.fill:parent
+
+        id:typeView
     GroupBox {
         title: "Camera"
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: parent.top
-        id : cameraGroupBox
-        SpinBox {
-            id:indexSpinBox
-            from: 0
-            value: envVariable.index
-            to: 10
-            onValueModified : {
-            envVariable.index = indexSpinBox.value
-            capture.start(envVariable.index)
-            }
+        CustomSpinBox{
+            x :10
+            width:80
+            from:0
+            to:10
+            value:envVariable.index
         }
-    }
+        }
     GroupBox {
         id:modeView
         title: "Mode View"
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: cameraGroupBox.bottom
         ColumnLayout{
             CheckBox {
                 text: "All"
@@ -71,9 +66,7 @@ Item {
         }
     }
     GroupBox {
-        id:typeView
         title : "Type View"
-        anchors.top: modeView.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         ColumnLayout{
@@ -97,25 +90,20 @@ Item {
             }
         }
      }
+}
          Button{
-        Image {
-            anchors.fill: parent
-                        anchors.topMargin: 10
-            anchors.bottomMargin: 10
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
-            source: "../Resources/Images/Reset.svg"
-        }
-        anchors.leftMargin: 20
-        anchors.topMargin: 5
-        anchors.bottomMargin: 5
-        anchors.rightMargin: 20
-        anchors.right:parent.right
-        anchors.left:parent.left
-        anchors.bottom:parent.bottom
-        anchors.top:typeView.bottom
-        height:width
-        onClicked: eyeTrackingVariable.reset()
-    }
+            icon.source:"../Resources/Images/Reset.svg"
+
+            anchors.leftMargin: 20
+            anchors.topMargin: 5
+            anchors.bottomMargin: 5
+            anchors.rightMargin: 20
+            anchors.right:parent.right
+            anchors.left:parent.left
+            anchors.bottom:parent.bottom
+            anchors.top:typeView.bottom
+            height:width
+            onClicked: eyeTrackingVariable.reset()
+
      }
 }

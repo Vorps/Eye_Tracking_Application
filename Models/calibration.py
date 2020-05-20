@@ -1,3 +1,5 @@
+from lxml import etree
+import os.path as path
 import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPointF
@@ -5,7 +7,23 @@ from PyQt5.QtCore import QPointF
 from EyesTracking import EyeTrackingClient
 from Models.variable import Variable, EnvVariable
 from enum import Enum
-import matplotlib.pyplot as plt
+
+class CalibrationSection(Variable):
+
+    def __init__(self):
+        super(CalibrationSection, self).__init__()
+        self.centerPupil = None
+        self.pos = None
+        self.mean = None
+        self.variance = None
+
+    def set(self,  centerPupil, pos):
+        self.centerPupil = centerPupil
+        self.pos = pos
+        self.mean = np.mean(centerPupil, axis=0)
+        self.variance = np.var(centerPupil, axis=0)
+        return self
+
 
 class Calibration(EyeTrackingClient, Variable):
 
@@ -13,15 +31,7 @@ class Calibration(EyeTrackingClient, Variable):
         NONE = 0
         STATE = 1
         START = 2
-        STOP =3
-
-    class CalibrationSection:
-
-        def __init__(self, centerPupil, pos):
-            self.centerPupil = centerPupil
-            self.pos = pos
-            self.mean = np.mean(centerPupil, axis=0)
-            self.variance = np.var(centerPupil, axis=0)
+        STOP = 3
 
     instance = None
     centersPupilCalibrationChange = QtCore.pyqtSignal()
@@ -33,7 +43,7 @@ class Calibration(EyeTrackingClient, Variable):
     def __init__(self, parent=None):
         super(Calibration, self).__init__(parent)
         self.setBlackList(
-            ['positionsCalibration', '_positionCalibration', '_centersPupilFilter', 'centersPupil', '_record'])
+            ['positionsCalibration', '_positionCalibration', '_centersPupilCalibration', '_record', 'filter', '_buffer', 'stateCalibration', '_stateCalibration', 'sectionCalibration'])
         self.positionsCalibration = np.empty((0, 2), int)
         self._positionCalibration = np.empty((0, 2), int)
         self._centersPupilCalibration = np.empty((0, 2), int)
@@ -42,9 +52,10 @@ class Calibration(EyeTrackingClient, Variable):
         self._frameMean = 1
         self.stateCalibration = []
         self._stateCalibration = "center"
-        self.load(EnvVariable.instance.getCalibration())
         self.filter = True
         self.sectionCalibration = {}
+        self.load(EnvVariable.instance.getCalibration())
+
         Calibration.instance = self
 
     def update(self, centerPupil):
@@ -61,7 +72,7 @@ class Calibration(EyeTrackingClient, Variable):
             value = self.stateCalibration[i]
             if value != 'focusStart' and value != 'focusStop':
                 if state == Calibration.State.STOP and indexStart != 0:
-                    self.sectionCalibration[name] = Calibration.CalibrationSection(self.centersPupil[indexStart:i], self.positionsCalibration[indexStart:i])
+                    self.sectionCalibration[name] = CalibrationSection().set(self.centersPupil[indexStart:i], self.positionsCalibration[indexStart:i])
                     indexStart = 0
                 state = Calibration.State.STATE
             if value == 'focusStart' and state == Calibration.State.STATE:
@@ -118,13 +129,25 @@ class Calibration(EyeTrackingClient, Variable):
 
     @QtCore.pyqtSlot(str)
     def load(self, name):
-        loading = super(Calibration, self).load(name)
-        if loading:
+        if path.exists(name[7:]):
+            tree = etree.parse(name[7:])
+            root = tree.getroot()
+            super(Calibration, self).loadApply(root)
+            for calibrationSection in root.findall('CalibrationSections/CalibrationSection'):
+                self.sectionCalibration[calibrationSection.attrib['name']] = CalibrationSection().loadApply(calibrationSection)
             EnvVariable.instance.setFileCalibration(name)
+
 
     @QtCore.pyqtSlot(str)
     def save(self, name):
-        super(Calibration, self).save(name)
+        element = etree.Element(type(self).__name__)
+        envVariable = super(Calibration, self).save(element)
+        sections = etree.SubElement(envVariable, "CalibrationSections")
+        for sectionCalibration in self.sectionCalibration:
+            section = etree.SubElement(sections, "CalibrationSection")
+            section.set("name", sectionCalibration)
+            self.sectionCalibration[sectionCalibration].save(section)
+        Variable.writeData(name, envVariable)
         EnvVariable.instance.setFileCalibration(name)
 
     @QtCore.pyqtSlot()
@@ -194,8 +217,8 @@ class Calibration(EyeTrackingClient, Variable):
         return points
 
     def calibrationApply(self):
-        x = np.convolve(self.centersPupil[:,0], np.full(self._frameMean, 1 / self._frameMean), mode='full')
-        y = np.convolve(self.centersPupil[:,1], np.full(self._frameMean, 1 / self._frameMean), mode='full')
+        #x = np.convolve(self.centersPupil[:,0], np.full(self._frameMean, 1 / self._frameMean), mode='full')
+        #y = np.convolve(self.centersPupil[:,1], np.full(self._frameMean, 1 / self._frameMean), mode='full')
         e = (self.centersPupil-self._meanCalibration)*self._ratioCalibration
         #result = np.concatenate((x,y),axis=0).reshape((x.size,2))
         plt.plot(self.centersPupil)

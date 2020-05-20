@@ -1,6 +1,7 @@
 import QtQuick 2.0
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.14
+import "Style"
 
 Item {
     id:ent1
@@ -8,101 +9,54 @@ Item {
     Rectangle{
         anchors.top: parent.top
         anchors.horizontalCenter : parent.horizontalCenter
-        height:95
-        width : 1340
+        height:130
+        width : 1220
         opacity : 0.9
         color:applicationWindow.color
         GroupBox {
-            anchors.fill:parent
             title: "Optimization"
             RowLayout {
-                GroupBox {
-                    title: "ZoomX"
-                    RowLayout {
-                        anchors.fill: parent
-                        Slider {
-                            id:zoomXSlider
-                            from: eyeTrackingVariable.zoomXMax/10
-                            value: eyeTrackingVariable.zoomX
-                            to: eyeTrackingVariable.zoomXMax
-                            onMoved : eyeTrackingVariable.zoomX = zoomXSlider.value
-                        }
+ GroupBox {
+ title: "Zoom"
+  RowLayout {
                         SpinBox {
+                            label:"ZoomX"
                             id:zoomXSpinBox
                             from: eyeTrackingVariable.zoomXMax/10
                             value: eyeTrackingVariable.zoomX
-                            to: 1280
+                            to: eyeTrackingVariable.zoomXMax
                             width : eyeTrackingVariable.zoomXMax
-                            onValueModified : eyeTrackingVariable.zoomX = zoomXSpinBox.value
-                        }
-                    }
-                }
-                GroupBox {
-                    title: "ZoomY"
-                    RowLayout {
-                        anchors.fill: parent
-                        Slider {
-                            id:zoomYSlider
-                            from: eyeTrackingVariable.zoomYMax/10
-                            value: eyeTrackingVariable.zoomY
-                            to: eyeTrackingVariable.zoomYMax
-                            onMoved : eyeTrackingVariable.zoomY = zoomYSlider.value
+                            onValueChanged : eyeTrackingVariable.zoomX = zoomXSpinBox.value
                         }
                         SpinBox {
+                            label: "ZoomY"
                             id:zoomYSpinBox
                             from: eyeTrackingVariable.zoomYMax/10
                             value: eyeTrackingVariable.zoomY
                             to: eyeTrackingVariable.zoomYMax
-                            onValueModified : eyeTrackingVariable.zoomY = zoomYSpinBox.value
-                        }
-                    }
-                }
-                GroupBox {
-                    title: "X"
-                    RowLayout {
-                        anchors.fill: parent
-                        Slider {
-                            id:xSlider
-                            from: -(eyeTrackingVariable.zoomXMax-eyeTrackingVariable.zoomX)
-                            value: eyeTrackingVariable.posZoomX
-                            to: eyeTrackingVariable.zoomXMax-eyeTrackingVariable.zoomX
-                            onMoved : eyeTrackingVariable.posZoomX = xSlider.value
+                            onValueChanged : eyeTrackingVariable.zoomY = zoomYSpinBox.value
                         }
                         SpinBox {
+                            label:"X"
                             id:xSpinBox
                             from: -(eyeTrackingVariable.zoomXMax-eyeTrackingVariable.zoomX)
                             value: eyeTrackingVariable.posZoomX
                             to: eyeTrackingVariable.zoomXMax-eyeTrackingVariable.zoomX
-                            onValueModified : eyeTrackingVariable.posZoomX = xSpinBox.value
-                        }
-                    }
-                }
-                GroupBox {
-                    title: "Y"
-                    RowLayout {
-                        anchors.fill: parent
-                        Slider {
-                            id:ySlider
-                            from: -(eyeTrackingVariable.zoomYMax-eyeTrackingVariable.zoomY)
-                            value: eyeTrackingVariable.posZoomY
-                            to: eyeTrackingVariable.zoomYMax-eyeTrackingVariable.zoomY
-                            onMoved : eyeTrackingVariable.posZoomY = ySlider.value
+                            onValueChanged : eyeTrackingVariable.posZoomX = xSpinBox.value
                         }
                         SpinBox {
+                            label:"Y"
                             id:ySpinBox
                             from: -(eyeTrackingVariable.zoomYMax-eyeTrackingVariable.zoomY)
                             value: eyeTrackingVariable.posZoomY
                             to: eyeTrackingVariable.zoomYMax-eyeTrackingVariable.zoomY
-                            onValueModified : eyeTrackingVariable.posZoomY = ySpinBox.value
+                            onValueChanged : eyeTrackingVariable.posZoomY = ySpinBox.value
                         }
-                    }
-                }
+}
+}
                 GroupBox {
                     title: "Eye detection"
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
                     RowLayout {
-                        anchors.fill:parent
                         CheckBox {
                             text:"Left eye"
                             checked: eyeTrackingVariable.selectEye & 1
@@ -122,8 +76,8 @@ Item {
     Rectangle{
         anchors.right: parent.right
         anchors.verticalCenter : parent.verticalCenter
-        height:405
-        width : 100
+        height:630
+        width : 120
         opacity : 0.9
         color:applicationWindow.color
         ModeView{
@@ -134,157 +88,94 @@ Item {
      Rectangle{
         anchors.bottom: param.top
         anchors.horizontalCenter : parent.horizontalCenter
-        height:60
-        width : 570
+        height:50
+        width : 490
         opacity : 0.9
         color:applicationWindow.color
         RowLayout {
-        GroupBox {
-                title: "Left Threshold"
-                RowLayout {
-                    Slider {
-                        id:leftThresholdRangeSlider
-                        from: 0
-                        to: 255
-                        value: eyeTrackingVariable.leftThreshold
-                        onMoved:eyeTrackingVariable.leftThreshold = leftThresholdRangeSlider.value
-                    }
+            y:10
+x:10
                     SpinBox {
+                         label:"Left Threshold"
                         id:leftThresholdSpinBox
                         from: 0
                         value: eyeTrackingVariable.leftThreshold
                         to: 255
-                        onValueModified : eyeTrackingVariable.leftThreshold = leftThresholdSpinBox.value
-                    }
-                }
-            }
-            GroupBox {
-                title: "Right Threshold"
-                RowLayout {
-                    Slider {
-                        id:rightThresholdRangeSlider
-                        from: 0
-                        to: 255
-                        value: eyeTrackingVariable.rightThreshold
-                        onMoved:eyeTrackingVariable.rightThreshold = rightThresholdRangeSlider.value
+                        onValueChanged : eyeTrackingVariable.leftThreshold = leftThresholdSpinBox.value
                     }
                     SpinBox {
+                        label:"Right Threshold"
                         id:rightThresholdSpinBox
                         from: 0
                         value: eyeTrackingVariable.rightThreshold
                         to: 255
-                        onValueModified : eyeTrackingVariable.rightThreshold = rightThresholdSpinBox.value
+                        onValueChanged : eyeTrackingVariable.rightThreshold = rightThresholdSpinBox.value
                     }
-                }
-            }
-            }
+
+
+        }
     }
 
     Rectangle{
     anchors.bottom : parent.bottom
     anchors.horizontalCenter : parent.horizontalCenter
-    height : 95
+    height : 82
     id:param
     opacity : 0.9
-    width : 1090
+    width : 1130
     color : applicationWindow.color
      RowLayout {
-        id : test
+            id : test
                 anchors.fill:parent
+                anchors.leftMargin:20
                  Button{
-                  Image {
-        anchors.fill: parent
-        anchors.topMargin: 10
-        anchors.bottomMargin: 10
-        anchors.leftMargin: 10
-        anchors.rightMargin: 10
-        source: "../Resources/Images/import.svg"
-    }
-                id:loadButton
-                anchors.left:test.left
-                anchors.leftMargin: 20
-                anchors.topMargin: 20
-                anchors.bottomMargin: 20
-                anchors.top:parent.top
-                anchors.bottom:parent.bottom
-                width:height
-                onClicked: fileDialogLoad.visible=true
+                    icon.source: "../Resources/Images/import.svg"
+                    id:loadButton
+                    width:height
+                    onClicked: fileDialogLoad.visible=true
             }
     GroupBox {
         id : propertieGroupBox
         title: "Properties"
-        anchors.leftMargin: 20
         anchors.left:loadButton.right
+        anchors.leftMargin:20
         RowLayout {
             anchors.fill:parent
-            GroupBox {
-                title: "Size"
-                RowLayout {
-                   RangeSlider {
-                        id:minMaxSizeRangeSlider
+            SpinBox {
+                        label:"Min Size"
+                        id:minSizeSpinBox
                         from: 0
-                        to: 500
-                        first.value: eyeTrackingVariable.minSize
-                        second.value: eyeTrackingVariable.maxSize
-                        first.onMoved:eyeTrackingVariable.minSize = minMaxSizeRangeSlider.first.value
-                        second.onMoved:eyeTrackingVariable.maxSize = minMaxSizeRangeSlider.second.value
-                   }
-                   SpinBox {
-                       id:minSizeSpinBox
-                       from: 0
-                       value: eyeTrackingVariable.minSize
-                       to: 500
-                       onValueModified : eyeTrackingVariable.minSize = thresholdSpinBox.value
-                   }
-                   SpinBox {
-                       id:maxSizeSpinBox
-                       from: 0
-                       value: eyeTrackingVariable.maxSize
-                       to: 500
-                       onValueModified : eyeTrackingVariable.maxSize = thresholdSpinBox.value
-                   }
-                }
-            }
-            GroupBox {
-                title: "Scale Factor"
-                RowLayout {
-                    anchors.fill: parent
-                    Slider {
-                        id:scale_factorSlider
-                        from: 13
-                        value: eyeTrackingVariable.scale_factor
-                        to: 30
-                        onMoved : eyeTrackingVariable.scale_factor = scale_factorSlider.value
+                        value: eyeTrackingVariable.minSize
+                        to: eyeTrackingVariable.maxSize
+                        onValueChanged : eyeTrackingVariable.minSize = minSizeSpinBox.value
                     }
+            SpinBox {
+                        label:"Max Size"
+                        id:maxSizeSpinBox
+                        from: eyeTrackingVariable.minSize
+                        value: eyeTrackingVariable.maxSize
+                        to: 500
+                        onValueChanged : eyeTrackingVariable.maxSize = maxSizeSpinBox.value
+                    }
+
                     SpinBox {
+                        label:"Scale Factor"
                         id:scale_factorSpinBox
                         from: 13
                         value: eyeTrackingVariable.scale_factor
                         to: 30
-                        onValueModified : eyeTrackingVariable.scale_factor = scale_factorSpinBox.value
+                        onValueChanged : eyeTrackingVariable.scale_factor = scale_factorSpinBox.value
                     }
-                }
-            }
-            GroupBox {
-                title: "Min Neighbors"
-                RowLayout {
-                    anchors.fill: parent
-                    Slider {
-                        id:min_neighborsSlider
-                        from: 5
-                        value: eyeTrackingVariable.min_neighbors
-                        to: 10
-                        onMoved : eyeTrackingVariable.min_neighbors = min_neighborsSlider.value
-                    }
+
                     SpinBox {
+                        label: "Min Neighbors"
                         id:min_neighborsSpinBox
                         from: 5
                         value: eyeTrackingVariable.min_neighbors
                         to: 10
-                        onValueModified : eyeTrackingVariable.min_neighbors = min_neighborsSpinBox.value
+                        onValueChanged : eyeTrackingVariable.min_neighbors = min_neighborsSpinBox.value
                     }
-                }
-            }
+
             }
 
             }
@@ -308,10 +199,6 @@ Item {
                 onClicked: fileDialogSave.visible=true
             }
            }
-
-
-
-
 
     }
 }
