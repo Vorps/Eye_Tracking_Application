@@ -12,7 +12,7 @@ Item {
             Layout.fillWidth:true
         }
         AppButton{
-            text:'Current Calibration'
+            text:'Report'
             Layout.fillWidth:true
         }
     }

@@ -4,7 +4,7 @@ import numpy as np
 
 from lxml import etree
 from PyQt5 import QtCore
-
+import pickle
 
 class Variable(QtCore.QObject):
 
@@ -32,33 +32,46 @@ class Variable(QtCore.QObject):
                 if child.attrib['type'] == "int":
                     setattr(self, child.tag, int(child.attrib['data']))
                 elif child.attrib['type'] == "ndarray":
-                    value = child.attrib['data']
-                    setattr(self, child.tag, np.fromstring(value[1:-1], dtype=float, sep=' '))
+                    setattr(self, child.tag, np.array([float(i) for i in child.attrib['data'].split(",")]).reshape(eval( child.attrib['shape'])))
                 else:
                     setattr(self, child.tag, child.attrib['data'])
                 if child.tag[1:] + "Change" in dir(self):
                     self.__getattribute__(child.tag[1:] + "Change").emit()
+        return self
 
     def saveApply(self, element):
         for property, value in vars(self).items():
             if property not in self.blackList and property != "blackList":
-                Variable.setData(element, property, value)
-        return element
+                self.setData(element, property, value)
 
     @QtCore.pyqtSlot(str)
     def save(self, name):
         element = etree.Element(type(self).__name__)
         self.saveApply(element)
-        Variable.writeData(name, element)
-
+        if name is not None:
+            Variable.writeData(name, element)
+        return element
 
     @abstractmethod
     def reset(self):
         pass
 
-    def setData(envVariable, propertie, data):
+    def setData(self, envVariable, propertie, data):
         element = etree.SubElement(envVariable, propertie)
-        element.set("data", str(data))
+        if type(data).__name__ == "ndarray":
+            element.set("shape", str(data.shape))
+            dataResult = ""
+            for x in data:
+                if type(x).__name__ == "ndarray":
+                    for y in x:
+                        dataResult+=str(y)+","
+                else:
+                    dataResult += str(x) + ","
+            if len(dataResult) > 0:
+                dataResult = dataResult[:-1]
+            element.set("data", dataResult)
+        else:
+            element.set("data", str(data))
         element.set("type", str(type(data).__name__))
 
     def writeData(name, envVariable):

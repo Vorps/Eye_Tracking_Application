@@ -20,18 +20,20 @@ class EyeTrackingClient(QtCore.QObject):
 
     def setBuffer(self, buffer):
         self._buffer = buffer
-        self.centersPupil = np.empty((buffer, 2), int)
+        self.centersPupil = np.full((buffer, 2),0, int)
 
     def update(self, centerPupil):
-        if self._buffer > 1:
-            self.centersPupil = np.roll(self.centersPupil, -1)
+        if self._buffer > 0:
+            self.centersPupil = np.roll(self.centersPupil, -1,axis=0)
             self.centersPupil[self._buffer-1, :] = centerPupil
         else:
             self.centersPupil = np.append(self.centersPupil, centerPupil, axis=0)
 
     def reset(self):
         if self._buffer > 1:
-            self.centersPupil = np.empty((self._buffer, 2), int)
+            self.centersPupil = np.full((self._buffer, 2),0, int)
+        else:
+            self.centersPupil = np.empty((0, 2), int)
 
     def setRecord(self, record):
         self._record = record
@@ -51,8 +53,18 @@ class EyeTracking:
             os.path.join("Classifiers", "haar", "haarcascade_frontalface_default.xml"))
         self.eye_detection = Eye_Detection()
         self.clients = []
+        self.anchorBuffer = 100
+        self.anchor = np.full((self.anchorBuffer, 2), 0, int)
+        self._anchor = np.array([0,0])
         self.colorRed = (255, 0, 0)
         self.colorGreen = (0, 255, 0)
+
+    def setAnchor(self, anchor):
+        if np.count_nonzero(self.anchor) == 0:
+            self.anchor = np.full((self.anchorBuffer, 2), anchor, int)
+        self.anchor = np.roll(self.anchor, -1, axis=0)
+        self.anchor[self.anchorBuffer - 1, :] = anchor
+        self._anchor = np.mean(self.anchor, axis=0)
 
     def addClient(self, client):
         self.clients.append(client)
@@ -135,8 +147,14 @@ class EyeTracking:
         base_image, X, Y, W, H, bw, bh = self.zoomImageApply(base_image)
         processed_image = cv2.cvtColor(base_image, cv2.COLOR_BGR2GRAY)
         typeImage = self.typeViewApply(base_image, processed_image)
+        face = self.face_detector.detectMultiScale(base_image, 1.3, 5)
+        x, y, w, h = None, None,None,None
+        if len(face) >= 1:
+            x, y,w,h = face[0]
+
         eyes = self.eye_detection.detect_eyes(processed_image)
         left_eye, right_eye, pupilLeft, pupilRight,centerEye, centerPupil= None, None, None, None,None,None
+
         if len(eyes) == 2:
             left_eye, right_eye = Eye_Detection.identify_eyes(eyes)
             if EyeTrackingVariable.instance.selectEye & 1:
@@ -150,16 +168,20 @@ class EyeTracking:
             self.showEyes(typeImage, eyes)
             centerEye, centerPupil = self.centerProcess(left_eye, right_eye, pupilLeft, pupilRight)
             self.showCenter(typeImage, centerEye, centerPupil)
+
         for client in self.clients:
             if client.record:
+                if x is not None:
+                    self.setAnchor(np.reshape((x+w/2,y+h/2), (1, 2)) if x is not None else None)
                 if client.filter:
                     if centerEye is not None and centerPupil is not None:
-                        client.update(np.reshape(centerPupil-centerEye, (1, 2)))
+                        client.update(np.reshape(centerPupil,(1, 2))-np.reshape(self._anchor,(1, 2)))
                 else:
                     client.update(np.reshape(centerPupil,
                                              (1, 2)) if centerEye is not None and centerPupil is not None else np.array(
                         [[np.nan, np.nan]]))
         result = self.modeViewApply(base_image, processed_image, typeImage, left_eye, right_eye, X, Y, W, H)
+
         self.showFps(result, round(1 / (time.time() - t0)))
         return result
 

@@ -146,10 +146,10 @@ ApplicationWindow {
         defaultSuffix :'xml'
         onAccepted: {
             eyeTrackingVariable.load(fileUrl);
-            fileDialog.visible = false
+            fileDialogLoad.visible = false
         }
         onRejected: {
-            fileDialog.visible = false
+            fileDialogLoad.visible = false
         }
     }
 
@@ -160,10 +160,10 @@ ApplicationWindow {
         defaultSuffix :'xml'
         onAccepted: {
             calibration.load(fileUrl);
-            fileDialog.visible = false
+            fileDialogLoadCalibration.visible = false
         }
         onRejected: {
-            fileDialog.visible = false
+            fileDialogLoadCalibration.visible = false
         }
     }
 
@@ -174,10 +174,10 @@ ApplicationWindow {
             selectExisting: false
             onAccepted: {
                 calibration.save(fileUrl)
-                fileDialog.visible = false
+                fileDialogSaveCalibration.visible = false
             }
             onRejected: {
-                fileDialog.visible = false
+                fileDialogSaveCalibration.visible = false
             }
         }
 
@@ -188,10 +188,10 @@ ApplicationWindow {
         selectExisting: false
         onAccepted: {
             eyeTrackingVariable.save(fileUrl)
-            fileDialog.visible = false
+            fileDialogSave.visible = false
         }
         onRejected: {
-            fileDialog.visible = false
+            fileDialogSave.visible = false
         }
     }
 
@@ -247,9 +247,9 @@ ApplicationWindow {
 
 
     header: ToolBar {
-     id: toolBarApp
+        id: toolBarApp
         RowLayout {
-
+            id:toolBarAppRowLayout
             spacing:20
             anchors.fill: parent
             Button {
@@ -296,12 +296,12 @@ ApplicationWindow {
                 id:timerWarning
                 interval: 500; running: calibration.record|mouseControl.record; repeat: true
                 onTriggered: {
-                    if(!toolBarApp.stateWarning){
+                    if(!toolBarAppRowLayout.stateWarning){
                         warningText.text = "Record ..."
                     } else {
                         warningText.text = ""
                     }
-                    toolBarApp.stateWarning = !toolBarApp.stateWarning
+                    toolBarAppRowLayout.stateWarning = !toolBarAppRowLayout.stateWarning
                 }
                 onRunningChanged: warningText.text = ""
 
@@ -390,7 +390,7 @@ ApplicationWindow {
             imageWriter.opacity= 1
             stack.push(eyeTrackingVariableView);
             break;
-        case 'Current Calibration':
+        case 'Report':
              stack.push(reportView);
              break;
         case 'Calibration':

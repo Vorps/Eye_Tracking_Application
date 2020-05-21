@@ -28,6 +28,8 @@ class CVCapture(QtCore.QObject):
         if self.m_timer.isActive():
             self.m_timer.stop()
         self.m_videoCapture = cv2.VideoCapture(index)
+        self.m_videoCapture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1280)
+        self.m_videoCapture.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
         EyeTrackingVariable.instance.setZoomXMax(int(self.m_videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH)))
         EyeTrackingVariable.instance.setZoomYMax(int(self.m_videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         if self.m_videoCapture.isOpened():

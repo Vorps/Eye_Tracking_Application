@@ -7,21 +7,30 @@ from PyQt5.QtCore import QPointF
 from EyesTracking import EyeTrackingClient
 from Models.variable import Variable, EnvVariable
 from enum import Enum
+import matplotlib.pyplot as plt
 
 class CalibrationSection(Variable):
 
     def __init__(self):
         super(CalibrationSection, self).__init__()
+        self.indexXMin = None
+        self.indexXMax = None
         self.centerPupil = None
+
         self.pos = None
         self.mean = None
         self.variance = None
 
-    def set(self,  centerPupil, pos):
+    def set(self,  centerPupil, pos, indexXMin, indexXMax):
+        self.variance = np.var(centerPupil, axis=0)
+        print(centerPupil)
+        centerPupil = np.delete(centerPupil, np.where(abs(centerPupil-np.mean(centerPupil, axis=0)) > self.variance), axis=0)
+        print(centerPupil)
         self.centerPupil = centerPupil
         self.pos = pos
         self.mean = np.mean(centerPupil, axis=0)
-        self.variance = np.var(centerPupil, axis=0)
+        self.indexXMin = indexXMin
+        self.indexXMax = indexXMax
         return self
 
 
@@ -52,16 +61,24 @@ class Calibration(EyeTrackingClient, Variable):
         self._frameMean = 1
         self.stateCalibration = []
         self._stateCalibration = "center"
-        self.filter = True
         self.sectionCalibration = {}
+        self.filter = True
+        self.height = None
+        self.width = None
         self.load(EnvVariable.instance.getCalibration())
 
         Calibration.instance = self
 
     def update(self, centerPupil):
+        print(centerPupil)
         super(Calibration, self).update(centerPupil)
         self.stateCalibration.append(self._stateCalibration)
         self.positionsCalibration = np.append(self.positionsCalibration, self._positionCalibration, axis=0)
+
+    @QtCore.pyqtSlot(int,int)
+    def setSize(self, width, height):
+        self.height = height
+        self.width = width
 
     @QtCore.pyqtSlot()
     def process(self):
@@ -72,7 +89,7 @@ class Calibration(EyeTrackingClient, Variable):
             value = self.stateCalibration[i]
             if value != 'focusStart' and value != 'focusStop':
                 if state == Calibration.State.STOP and indexStart != 0:
-                    self.sectionCalibration[name] = CalibrationSection().set(self.centersPupil[indexStart:i], self.positionsCalibration[indexStart:i])
+                    self.sectionCalibration[name] = CalibrationSection().set(self.centersPupil[indexStart:i], self.positionsCalibration[indexStart:i], indexStart, i)
                     indexStart = 0
                 state = Calibration.State.STATE
             if value == 'focusStart' and state == Calibration.State.STATE:
@@ -82,8 +99,8 @@ class Calibration(EyeTrackingClient, Variable):
             if value == 'focusStop' and state == Calibration.State.START:
                 state = Calibration.State.STOP
 
-        if "center" in self.sectionCalibration:
-            self.setMeanCalibration(self.sectionCalibration["center"].mean)
+        #if "center" in self.sectionCalibration:
+        #    self.setMeanCalibration(self.sectionCalibration["center"].mean)
         xMin = np.empty((0, 1), float)
         yMin = np.empty((0, 1), float)
         xMax = np.empty((0, 1), float)
@@ -100,29 +117,12 @@ class Calibration(EyeTrackingClient, Variable):
         if "se" in self.sectionCalibration:
             xMax = np.append(xMax, self.sectionCalibration["se"].mean[0])
             yMax = np.append(yMax, self.sectionCalibration["se"].mean[1])
-        print("Start Report")
-        print(xMin)
-        print(xMax)
-        print(yMin)
-        print(yMax)
-        xRangeMean = np.array([np.min(xMin), np.max(xMax)])
-        yRangeMean = np.array([np.min(yMin), np.max(yMax)])
-        print("Report")
-        print(xRangeMean)
-        print(yRangeMean)
+        xRangeMean = np.array([np.mean(xMin), np.mean(xMax)])
+        yRangeMean = np.array([np.mean(yMin), np.mean(yMax)])
+        self.setMeanCalibration(np.array([np.mean(xRangeMean), np.mean(yRangeMean)]))
+
         rangeXReal, rangeYReal = Calibration.rangePos(self.positionsCalibration)
-        print("Report")
-        print(rangeXReal)
-        print(rangeYReal)
-        print("Report")
-        print(np.diff(rangeXReal))
-        print(np.diff(rangeYReal))
-        print(np.diff(xRangeMean))
-        print(np.diff(yRangeMean))
         ratio = np.append(np.diff(rangeXReal) / np.diff(xRangeMean), np.diff(rangeYReal) / np.diff(yRangeMean))
-        print("Report")
-        print(ratio)
-        print(self._meanCalibration)
         self.setRatioCalibration(ratio)
         self.setCentersPupilCalibration(self.calibrationApply())
 
@@ -136,17 +136,17 @@ class Calibration(EyeTrackingClient, Variable):
             for calibrationSection in root.findall('CalibrationSections/CalibrationSection'):
                 self.sectionCalibration[calibrationSection.attrib['name']] = CalibrationSection().loadApply(calibrationSection)
             EnvVariable.instance.setFileCalibration(name)
+            self.setCentersPupilCalibration(self.calibrationApply())
 
 
     @QtCore.pyqtSlot(str)
     def save(self, name):
-        element = etree.Element(type(self).__name__)
-        envVariable = super(Calibration, self).save(element)
+        envVariable = super(Calibration, self).save(None)
         sections = etree.SubElement(envVariable, "CalibrationSections")
         for sectionCalibration in self.sectionCalibration:
             section = etree.SubElement(sections, "CalibrationSection")
             section.set("name", sectionCalibration)
-            self.sectionCalibration[sectionCalibration].save(section)
+            self.sectionCalibration[sectionCalibration].saveApply(section)
         Variable.writeData(name, envVariable)
         EnvVariable.instance.setFileCalibration(name)
 
@@ -193,6 +193,7 @@ class Calibration(EyeTrackingClient, Variable):
 
     @staticmethod
     def rangePos(data):
+        print(data)
         rangeX = np.array([np.min(data[:, 0]), np.max(data[:, 0])])
         rangeY = np.array([np.min(data[:, 1]), np.max(data[:, 1])])
         return rangeX, rangeY
@@ -217,12 +218,54 @@ class Calibration(EyeTrackingClient, Variable):
         return points
 
     def calibrationApply(self):
-        #x = np.convolve(self.centersPupil[:,0], np.full(self._frameMean, 1 / self._frameMean), mode='full')
-        #y = np.convolve(self.centersPupil[:,1], np.full(self._frameMean, 1 / self._frameMean), mode='full')
-        e = (self.centersPupil-self._meanCalibration)*self._ratioCalibration
-        #result = np.concatenate((x,y),axis=0).reshape((x.size,2))
-        plt.plot(self.centersPupil)
-        plt.show()
-        plt.plot(e)
-        plt.show()
+        x = np.convolve(self.centersPupil[:,0], np.full(self._frameMean, 1 / self._frameMean), mode='valid')
+        y = np.convolve(self.centersPupil[:,1], np.full(self._frameMean, 1 / self._frameMean), mode='valid')
+        u = np.empty((len(x),2), float)
+        u[:,0] = x
+        u[:,1] = y
+        e = (u-self._meanCalibration)*(self._ratioCalibration/np.array([self.width, self.height]))
         return e
+
+    def calibrationApplyClient(self, centersPupil):
+        u = np.array([np.mean(centersPupil, axis=0)])
+        print((u - self._meanCalibration))
+        e = (u - self._meanCalibration) * self._ratioCalibration
+        return e
+
+    @QtCore.pyqtSlot()
+    def plot(self):
+        calibrationValue = self.calibrationApply()*np.array([self.width, self.height])
+
+        fig, (ax1, ax2) = plt.subplots(2,1)
+        ax1.plot(self.centersPupil[:, 0],'b', label='X')
+        ax3 = ax1.twinx()
+        ax3.plot(self.centersPupil[:, 1], 'r', label='Y')
+        ax1.set_title('Pupils Center')
+
+        ax2.plot(calibrationValue[:,0],'b', label='X')
+        ax2.plot(calibrationValue[:,1],'r', label='Y')
+        ax2.plot(self.positionsCalibration[:, 0], 'g', label='X Screen')
+        ax2.plot(self.positionsCalibration[:, 1], 'm', label='Y Screen')
+        ax2.set_title('Gaze estimation')
+
+        for calibrationSection in self.sectionCalibration:
+            xMin = self.sectionCalibration[calibrationSection].indexXMin
+            xMax = self.sectionCalibration[calibrationSection].indexXMax
+            mean = self.sectionCalibration[calibrationSection].mean
+            variance = self.sectionCalibration[calibrationSection].variance
+            ax1.text((xMin+xMax)/2, max(self.centersPupil[:, 0]), calibrationSection, horizontalalignment='center', fontsize=8)
+            ax1.axvline(x=xMin)
+            ax2.text((xMin + xMax) / 2, max(calibrationValue[:, 0]), calibrationSection, horizontalalignment='center',fontsize=8)
+            ax2.axvline(x=xMin)
+            ax1.axvline(x=xMax)
+            ax1.plot((xMin+xMax)/2, mean[0], 'go')
+            ax3.plot((xMin+xMax)/2, mean[1], 'go')
+            ax1.errorbar((xMin+xMax)/2, mean[0], variance[0])
+            ax3.errorbar((xMin + xMax) / 2, mean[1], variance[1])
+
+        ax3.legend('mean')
+        for ax in ax1, ax2, ax3:
+            ax.set(xlabel='Frame', ylabel='Amplitude (Pixel)')
+            ax.legend()
+
+        plt.show()

@@ -7,43 +7,14 @@ Item {
     Rectangle{
         id:scenarioCalibration
         property int speed: 1000
-        property real opacity1: 1
-        property real opacity2: 0.1
         anchors.fill:parent
         color:'transparent'
         ColumnLayout{
-            anchors.fill:parent
-            Canvas {
-                id: canvasCalibration
-                height:parent.height
-                width:parent.width
-                onPaint: {
-                    var ctx = getContext("2d");
-                    ctx.reset();
-                    ctx.fillStyle = Qt.rgba(200, 200, 200, scenarioCalibration.opacity1);
-                    ctx.fillRect(0, 0, width, height)
-                    ctx.fill()
-                    ctx.lineWidth = 4
-                    ctx.strokeStyle = Qt.rgba(0, 1, 0, scenarioCalibration.opacity2);
-                    ctx.moveTo(40, 40)
-                    ctx.lineTo(width-40, height-40)
-                    ctx.moveTo(40, 40)
-                    ctx.lineTo(width-40, 40)
-                    ctx.moveTo(40, height-40)
-                    ctx.lineTo(width-40, 40)
-                    ctx.moveTo(40, height-40)
-                    ctx.lineTo(width-40, height-40)
-                    ctx.stroke()
-                    ctx.fillStyle = Qt.rgba(1, 0, 0, scenarioCalibration.opacity1);
-                    var meanLeft = calibration.meanCalibration
-                    var ratioLeft = calibration.ratioCalibration
-                    for(var i in calibration.centersPupilCalibration){
-                        var point = calibration.centersPupilCalibration[i]
-                        ctx.roundedRect(point.x+width/2, point.y+height/2,4,4,2,2)
-                        ctx.fill()
-                    }
-                }
-            }
+anchors.fill:parent
+        ResultView{
+            id:canvasCalibration
+        }
+
             Rectangle{
                 id: resultCalibration
                 visible:false
@@ -53,7 +24,7 @@ Item {
                 width : 600
                 opacity : 0.8
                 color:applicationWindow.color
-                RowLayout {
+                Row {
                     spacing:20
                     anchors.fill: parent
                     Button{
@@ -68,39 +39,10 @@ Item {
                         width:height
                         onClicked: scenarioCalibration.reset()
                     }
-                    Text{
-                        id:textCalibration
-                        anchors.leftMargin: 20
-                        anchors.left:loadButtonCalibrationRetry.right
-                        font.family: "Helvetica"
-                        font.pointSize: 15
-                        color: "white"
-                        text:"Center : x = " +Math.round(calibration.meanCalibration.x)+" y = "+Math.round(calibration.meanCalibration.y)+" Ratio : x = " +Math.round(calibration.ratioCalibration.x)+" y = "+Math.round(calibration.ratioCalibration.y)
-                    }
-                    GroupBox {
-                        title: "Frame mean"
-                        RowLayout {
-                            Slider {
-                                id:frameMeanSlider
-                                from: 1
-                                to: 10
-                                value: calibration.frameMean
-                                onMoved:{
-                                    calibration.frameMean = frameMeanSlider.value
-                                    canvasCalibration.requestPaint()
-                                }
-                            }
-                            SpinBox {
-                                id:frameMeanSpinBox
-                                from: 1
-                                value: calibration.frameMean
-                                to: 10
-                                onValueModified : {
-                                    calibration.frameMean = frameMeanSpinBox.value
-                                    canvasCalibration.requestPaint()
-                                }
-                            }
-                        }
+                    AppButton{
+                        text:'Report'
+                        x: 100
+                        y :parent.height/2-height/2
                     }
                     Button{
                         icon.source: "../Resources/Images/Save.svg"
@@ -132,17 +74,17 @@ Item {
                 source: "../Resources/Images/Target.svg"
             }
             onXChanged:{
-                calibration.setPositionCalibration(Qt.point(cible.x, cible.y))
+                calibration.setPositionCalibration(Qt.point(cible.x-scenarioCalibration.width/2, cible.y-scenarioCalibration.height/2))
             }
             onYChanged:{
-                calibration.setPositionCalibration(Qt.point(cible.x, cible.y))
+                calibration.setPositionCalibration(Qt.point(cible.x-scenarioCalibration.width/2, cible.y-scenarioCalibration.height/2))
             }
         }
 
         MouseArea {
             id : areaCalibration
             anchors.fill: parent
-          acceptedButtons: Qt.LeftButton | Qt.RightButton
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             onReleased: {
                 if(mouse.button == 1 && !calibration.record){
                    scenarioCalibration.start()
@@ -189,6 +131,7 @@ Item {
             menuBarApp.visible = false
             canvasCalibration.height = scenarioCalibration.height;
             canvasCalibration.requestPaint();
+            calibration.setSize(canvasCalibration.width, canvasCalibration.height)
         }
         function quit() {
             calibration.record = false;
@@ -201,8 +144,8 @@ Item {
             scenarioCalibration.state = "center"
             toolBarApp.visible = true
             menuBarApp.visible = true
-            scenarioCalibration.opacity1 = 0.8
-            scenarioCalibration.opacity2 = 1
+            canvasCalibration.opacity1 = 0.8
+            canvasCalibration.opacity2 = 1
             calibration.record = false;
             calibration.process()
             resultCalibration.visible = true
@@ -271,16 +214,16 @@ Item {
 
                 PropertyChanges {
                     target: cible
-                     x: scenarioCalibration.cible.x
-                     y: scenarioCalibration.cible.y
                      opacity: 1
+
+                     x: scenarioCalibration.cible.x-10
+                     y: scenarioCalibration.cible.y
                      height:40
                      width:40
                 }
             },
             State {
                 name: "focusStop"
-
                 PropertyChanges {
                     target: cible
                      height:20
