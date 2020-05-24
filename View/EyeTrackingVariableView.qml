@@ -102,7 +102,9 @@ x:10
                         value: eyeTrackingVariable.leftThreshold
                         to: 255
                         onValueChanged : eyeTrackingVariable.leftThreshold = leftThresholdSpinBox.value
+
                     }
+
                     SpinBox {
                         label:"Right Threshold"
                         id:rightThresholdSpinBox

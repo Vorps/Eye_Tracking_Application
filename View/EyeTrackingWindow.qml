@@ -15,7 +15,7 @@ ApplicationWindow {
     height: 850
     color:"#151d25"
     onClosing: {
-        envVariable.save("1234567Data/EnvVariable/Default.xml")
+        envVariable.save("Data/EnvVariable/Default.xml")
     }
 
     ButtonGroup { id: radioGroup1 }

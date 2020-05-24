@@ -14,11 +14,16 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         CustomSpinBox{
+            id:indexSpinBox
             x :10
             width:80
             from:0
             to:10
             value:envVariable.index
+            onValueModified:{
+                envVariable.index=indexSpinBox.value
+                capture.start(indexSpinBox.index)
+            }
         }
         }
     GroupBox {

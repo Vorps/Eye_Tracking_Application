@@ -16,16 +16,23 @@ Item {
                     ctx.reset()
                     ctx.fillStyle = Qt.rgba(1, 0, 0, 1);
                     ctx.beginPath()
-                    //for(var i = 0; i < mouseControl.posMouse.length-10; i+=10){
-                    //    var point = mouseControl.posMouse[i]
-                    //    ctx.roundedRect(point.x+width/2, point.y+height/2,6,6,3,3)
-                    //}
-                    //ctx.fill()
-                    ctx.beginPath()
-                    var point = mouseControl.posMouse[mouseControl.posMouse.length-1]
-                    ctx.fillStyle = Qt.rgba(0, 1, 0, 1);
-                    ctx.roundedRect(point.x-10+width/2, point.y-10+height/2,20,20,10,10)
+                    for(var i = 0; i < mouseControl.posMouse.length; i+=1){
+                        var point = mouseControl.posMouse[i]
+                        ctx.roundedRect(point.x+width/2, point.y+height/2,6,6,3,3)
+                    }
                     ctx.fill()
+                    var point = mouseControl.posMouse[mouseControl.posMouse.length-1]
+                    var xMouse = point.x+width/2
+                    var yMouse = point.y+height/2
+                    if(yMouse > 0 && yMouse < parent.height && xMouse > 0 && xMouse < parent.width){
+                        ctx.beginPath()
+                        ctx.fillStyle = Qt.rgba(0, 1, 0, 1);
+                        ctx.roundedRect(xMouse, yMouse,20,20,10,10)
+                        ctx.fill()
+                        var row = Math.floor(yMouse*mouseControl.row/mouseItem.height)
+                        var column = Math.floor(xMouse*mouseControl.column/mouseItem.width)
+                        mouseItem.zone = row*mouseControl.column+column
+                    }
                 }
             }
             color: "white"
@@ -98,7 +105,7 @@ x:10
             running: true
             repeat: true
             onTriggered: {
-                gridRepeater.itemAt(mouseItem.zone).time = gridRepeater.itemAt(mouseItem.zone).time+500
+                gridRepeater.itemAt(mouseItem.zone).time = gridRepeater.itemAt(mouseItem.zone).time+25
                 cible.color = Qt.rgba((Math.abs(cible.x-mouseItem.lastX))/10,0.5, 0.5, 1)
                 mouseItem.lastX = cible.x
                 mouseItem.lastY = cible.y

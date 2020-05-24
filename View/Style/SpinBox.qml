@@ -24,7 +24,7 @@ SpinBox {
                     value:control.value
                     background: Rectangle {
                         x: control1.leftPadding
-y: control.availableHeight / 2 - height / 2
+                        y: control.availableHeight / 2 - height / 2
                         implicitWidth: 180
                         implicitHeight: 6
                         width: control1.availableWidth
@@ -48,7 +48,7 @@ y: control.availableHeight / 2 - height / 2
                         color: Style.blue1
                         border.color: Style.gray
                     }
-}
+            }
         }
 
 
