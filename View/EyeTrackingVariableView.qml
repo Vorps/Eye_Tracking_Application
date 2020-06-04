@@ -3,6 +3,7 @@ import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.14
 import "Style"
 
+
 Item {
     id:ent1
     objectName:"ent1"

@@ -15,11 +15,11 @@ Item {
             text:'Calibration'
             Layout.fillWidth:true
         }
-        AppButton{
-            text:'Simon Task'
-            Layout.fillWidth:true
-            enabled:envVariable.calibrationLoad
-        }
+        //AppButton{
+        //    text:'Simon Task'
+        //    Layout.fillWidth:true
+        //    enabled:envVariable.calibrationLoad
+        //}
         AppButton{
             text:'Mouse'
             Layout.fillWidth:true
